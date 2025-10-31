@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CMS Monorepo
+
+A modern content management system built with a monorepo architecture.
+
+## Architecture
+
+This project is organized as a pnpm monorepo with the following packages:
+
+- **`packages/web`** - Next.js web application with Shadcn UI
+- **`packages/backend`** - NestJS backend API
+- **`packages/mobile`** - React Native mobile app (Ignite template)
+- **`packages/shared`** - Shared types and utilities
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js >= 20
+- pnpm
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Run web app only
+pnpm dev:web
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Run backend only
+pnpm dev:backend
 
-## Learn More
+# Run mobile app only
+pnpm dev:mobile
 
-To learn more about Next.js, take a look at the following resources:
+# Run all apps in parallel
+pnpm dev:all
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Build
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Build all packages
+pnpm build:all
 
-## Deploy on Vercel
+# Build specific package
+pnpm build:web
+pnpm build:backend
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+.
+├── packages/
+│   ├── web/          # Next.js web application
+│   ├── backend/      # NestJS API
+│   ├── mobile/       # React Native mobile app
+│   └── shared/       # Shared code
+├── package.json      # Root package.json with workspace scripts
+└── pnpm-workspace.yaml
+```
+
+## Tech Stack
+
+### Web
+- Next.js 16
+- React 19
+- Tailwind CSS 4
+- Shadcn UI
+- HUGEicons
+
+### Backend
+- NestJS
+- TypeScript
+
+### Mobile
+- React Native
+- Expo
+- Ignite Boilerplate
+
+## Scripts
+
+- `pnpm dev` - Start web app
+- `pnpm dev:web` - Start web app
+- `pnpm dev:backend` - Start backend in watch mode
+- `pnpm dev:mobile` - Start mobile app
+- `pnpm dev:all` - Start all apps in parallel
+- `pnpm build:all` - Build all packages
+- `pnpm lint` - Lint all packages
+- `pnpm typecheck` - Type check all packages
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+Private - All rights reserved
