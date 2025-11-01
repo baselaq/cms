@@ -1,0 +1,10 @@
+# Protected Files for Shared Package
+# These files require special review before modification
+
+# Package configuration
+package.json
+package-lock.json
+
+# TypeScript configuration (if exists)
+tsconfig.json
+

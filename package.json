@@ -15,9 +15,17 @@
     "start": "pnpm --filter web start",
     "lint": "pnpm --recursive lint",
     "typecheck": "pnpm --recursive typecheck",
-    "clean": "pnpm --recursive clean && rm -rf node_modules"
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "validate:kebab": "node ./scripts/validate-kebab-case.mjs",
+    "validate:naming": "node ./scripts/validate-ts-naming.mjs",
+    "validate:protected": "bash ./scripts/validate-protected-files.sh",
+    "validate:imports": "node ./scripts/validate-relative-imports.mjs",
+    "validate:duplicates": "node ./scripts/validate-duplicate-types.mjs",
+    "validate": "pnpm lint && pnpm typecheck && pnpm validate:kebab && pnpm validate:naming && pnpm validate:protected && pnpm validate:imports && pnpm validate:duplicates",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "husky": "^9.0.0"
   }
 }

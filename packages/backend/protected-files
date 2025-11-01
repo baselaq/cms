@@ -1,0 +1,20 @@
+# Protected Files for Backend Package
+# These files require special review before modification
+
+# Package configuration
+package.json
+package-lock.json
+
+# TypeScript configuration
+tsconfig.json
+tsconfig.build.json
+
+# NestJS configuration
+nest-cli.json
+
+# ESLint configuration
+eslint.config.mjs
+
+# Application entry point
+src/main.ts
+

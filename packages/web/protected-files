@@ -1,0 +1,26 @@
+# Protected Files for Web Package
+# These files require special review before modification
+
+# Package configuration
+package.json
+package-lock.json
+
+# TypeScript configuration
+tsconfig.json
+
+# Next.js configuration
+next.config.ts
+next-env.d.ts
+
+# ESLint configuration
+eslint.config.mjs
+
+# PostCSS configuration
+postcss.config.mjs
+
+# Component configuration
+components.json
+
+# Global styles
+app/globals.css
+
