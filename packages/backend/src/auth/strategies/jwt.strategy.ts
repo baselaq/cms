@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { ITenantContext } from '../../tenant/tenant.context';
+import { ITenantContext } from '@/tenant/tenant.context';
 import { AuthJwtService } from '../services/jwt.service';
 import { TokenBlacklistService } from '../services/token-blacklist.service';
 

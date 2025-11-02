@@ -4,22 +4,20 @@ import {
   UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, IsNull } from 'typeorm';
+import { IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { ITenantContext } from '../../tenant/tenant.context';
-import { UserEntity } from '../../database/tenant/entities/user.entity';
-import { UserTokenEntity } from '../../database/tenant/entities/user-token.entity';
-import { LoginDto, RefreshTokenDto, AuthResponseDto } from '../dto';
-import { AuthJwtService } from './jwt.service';
-import { TokenBlacklistService } from './token-blacklist.service';
+import { ITenantContext } from '@/tenant/tenant.context';
+import { UserEntity } from '@/database/tenant/entities/user.entity';
+import { UserTokenEntity } from '@/database/tenant/entities/user-token.entity';
+import { LoginDto, RefreshTokenDto, AuthResponseDto } from '@/auth/dto';
+import { AuthJwtService } from '@/auth/services/jwt.service';
+import { TokenBlacklistService } from '@/auth/services/token-blacklist.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectDataSource() private readonly dataSource: DataSource,
     private readonly jwtService: AuthJwtService,
     private readonly blacklistService: TokenBlacklistService,
   ) {}
@@ -34,7 +32,7 @@ export class AuthService {
     device?: string,
   ): Promise<AuthResponseDto> {
     // Find user by email
-    const user = await this.dataSource
+    const user = await tenantContext.dataSource
       .getRepository(UserEntity)
       .findOne({ where: { email: loginDto.email } });
 
@@ -78,7 +76,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Store refresh token
-    await this.dataSource.getRepository(UserTokenEntity).save({
+    await tenantContext.dataSource.getRepository(UserTokenEntity).save({
       userId: user.id,
       token: hashedRefreshToken,
       expiresAt,
@@ -87,7 +85,7 @@ export class AuthService {
     });
 
     // Update last login
-    await this.dataSource.getRepository(UserEntity).update(user.id, {
+    await tenantContext.dataSource.getRepository(UserEntity).update(user.id, {
       lastLoginAt: new Date(),
     });
 
@@ -128,7 +126,7 @@ export class AuthService {
     );
 
     // Find user
-    const user = await this.dataSource
+    const user = await tenantContext.dataSource
       .getRepository(UserEntity)
       .findOne({ where: { id: payload.sub } });
 
@@ -142,7 +140,7 @@ export class AuthService {
     }
 
     // Check if stored token exists and matches
-    const storedToken = await this.dataSource
+    const storedToken = await tenantContext.dataSource
       .getRepository(UserTokenEntity)
       .findOne({
         where: { userId: user.id, revokedAt: IsNull() },
@@ -178,7 +176,7 @@ export class AuthService {
     const expiresIn = parseInt(process.env.JWT_REFRESH_EXPIRY || '604800', 10);
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-    await this.dataSource
+    await tenantContext.dataSource
       .getRepository(UserTokenEntity)
       .update(storedToken.id, {
         token: hashedNewRefreshToken,
@@ -215,7 +213,7 @@ export class AuthService {
       );
 
       // Mark token as revoked in database
-      await this.dataSource
+      await tenantContext.dataSource
         .getRepository(UserTokenEntity)
         .update(
           { userId: payload.sub, revokedAt: IsNull() },
@@ -235,9 +233,12 @@ export class AuthService {
   /**
    * Revoke all tokens for a user (e.g., password reset or security breach)
    */
-  async revokeAllUserTokens(userId: string): Promise<void> {
+  async revokeAllUserTokens(
+    userId: string,
+    tenantContext: ITenantContext,
+  ): Promise<void> {
     // Mark all tokens as revoked
-    await this.dataSource
+    await tenantContext.dataSource
       .getRepository(UserTokenEntity)
       .update({ userId, revokedAt: IsNull() }, { revokedAt: new Date() });
 
