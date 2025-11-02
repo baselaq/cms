@@ -9,8 +9,10 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Packages to validate
-const PACKAGES = ["backend", "web", "mobile", "shared"];
+// Packages to validate (can be overridden via environment variable)
+const PACKAGES = process.env.VALIDATE_PACKAGES
+  ? process.env.VALIDATE_PACKAGES.split(",")
+  : ["backend", "web", "mobile", "shared"];
 
 // Common source directory names
 const SOURCE_DIRS = ["src", "app", "lib"];
