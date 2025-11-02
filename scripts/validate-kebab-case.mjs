@@ -11,6 +11,54 @@ const __dirname = dirname(__filename);
 // Kebab-case regex pattern
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+// NestJS-style file patterns (allowed to have dots, e.g., app.controller.ts)
+const NESTJS_PATTERNS = [
+  /\.controller\.tsx?$/,
+  /\.service\.tsx?$/,
+  /\.module\.tsx?$/,
+  /\.guard\.tsx?$/,
+  /\.interceptor\.tsx?$/,
+  /\.filter\.tsx?$/,
+  /\.middleware\.tsx?$/,
+  /\.entity\.tsx?$/,
+  /\.dto\.tsx?$/,
+  /\.interface\.tsx?$/,
+  /\.config\.tsx?$/,
+  /\.util\.tsx?$/,
+  /\.decorator\.tsx?$/,
+  /\.context\.tsx?$/,
+];
+
+// React Native-style file patterns (allowed to have dots, e.g., config.base.ts, gesture-handler.native.ts)
+const REACT_NATIVE_PATTERNS = [
+  /\.base\.tsx?$/,
+  /\.dev\.tsx?$/,
+  /\.prod\.tsx?$/,
+  /\.test\.tsx?$/,
+  /\.native\.tsx?$/,
+  /\.web\.tsx?$/,
+  /\.utils\.tsx?$/,
+];
+
+// Next.js file patterns (special route files)
+const NEXTJS_PATTERNS = [
+  /^page\.tsx?$/,           // page.tsx, page.ts
+  /^layout\.tsx?$/,         // layout.tsx, layout.ts
+  /^loading\.tsx?$/,        // loading.tsx, loading.ts
+  /^error\.tsx?$/,          // error.tsx, error.ts
+  /^not-found\.tsx?$/,      // not-found.tsx, not-found.ts
+  /^route\.tsx?$/,          // route.tsx, route.ts (API routes)
+  /^template\.tsx?$/,       // template.tsx, template.ts
+  /^default\.tsx?$/,        // default.tsx, default.ts
+  /^global-error\.tsx?$/,   // global-error.tsx, global-error.ts
+  /^opengraph-image\.tsx?$/, // opengraph-image.tsx
+  /^icon\.tsx?$/,           // icon.tsx
+  /^apple-icon\.tsx?$/,     // apple-icon.tsx
+  /^favicon\.ico$/,         // favicon.ico
+  /^robots\.txt$/,          // robots.txt
+  /^sitemap\.tsx?$/,        // sitemap.tsx, sitemap.ts
+];
+
 // Files and directories that are allowed to not follow kebab-case
 const ALLOWED_EXCEPTIONS = new Set([
   "package.json",
@@ -132,14 +180,30 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
         let nameToCheck = entry;
         let shouldValidate = false;
 
-        // Handle .page.tsx files specially
-        if (entry.endsWith(".page.tsx")) {
+        // Check if it's a Next.js special file (e.g., page.tsx, layout.tsx)
+        if (NEXTJS_PATTERNS.some((pattern) => pattern.test(entry))) {
+          // Skip Next.js route files (they have special names)
+          shouldValidate = false;
+        } else if (entry.endsWith(".page.tsx")) {
+          // Handle .page.tsx files specially (Next.js pages directory)
           nameToCheck = entry.replace(".page.tsx", "");
           shouldValidate = true;
         } else if (entry.endsWith(".d.ts")) {
           // Handle .d.ts files specially - strip both .d and .ts
           nameToCheck = entry.replace(".d.ts", "");
           shouldValidate = true;
+        } else if (entry.endsWith(".spec.ts") || entry.endsWith(".spec.tsx")) {
+          // Skip .spec.ts and .spec.tsx files (Jest/Vitest test files)
+          shouldValidate = false;
+        } else if (entry.endsWith(".test.ts") || entry.endsWith(".test.tsx")) {
+          // Skip .test.ts and .test.tsx files (test files)
+          shouldValidate = false;
+        } else if (NESTJS_PATTERNS.some((pattern) => pattern.test(entry))) {
+          // Skip NestJS-style files with dots (e.g., app.controller.ts)
+          shouldValidate = false;
+        } else if (REACT_NATIVE_PATTERNS.some((pattern) => pattern.test(entry))) {
+          // Skip React Native-style files with dots (e.g., config.base.ts)
+          shouldValidate = false;
         } else {
           const ext = entry.substring(entry.lastIndexOf("."));
           nameToCheck = basename(entry, ext);

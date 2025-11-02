@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import type { ITenantMetadata } from '../../../tenant/tenant.context';
+import type { ITenantMetadata } from '@/tenant/tenant.context';
 
 @Entity('clubs')
 @Index(['subdomain'])

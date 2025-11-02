@@ -1,1 +1,65 @@
-pnpm validate
+# Get list of changed packages
+CHANGED_PACKAGES=$(git diff --cached --name-only | grep -E "^packages/" | cut -d'/' -f2 | sort -u)
+
+# If no packages changed, skip validation
+if [ -z "$CHANGED_PACKAGES" ]; then
+  echo "No package changes detected, skipping validation"
+  exit 0
+fi
+
+echo "Validating changed packages: $CHANGED_PACKAGES"
+
+# Run lint on each changed package individually
+for pkg in $CHANGED_PACKAGES; do
+  if [ -f "packages/$pkg/package.json" ] && grep -q '"lint"' "packages/$pkg/package.json"; then
+    echo "Running lint on $pkg..."
+    pnpm --filter "./packages/$pkg" lint || exit 1
+  fi
+done
+
+# Run typecheck on each changed package individually
+for pkg in $CHANGED_PACKAGES; do
+  if [ -f "packages/$pkg/package.json" ] && grep -q '"typecheck"' "packages/$pkg/package.json"; then
+    echo "Running typecheck on $pkg..."
+    # Skip typecheck for shared if no tsconfig exists
+    if [ "$pkg" = "shared" ] && [ ! -f "packages/$pkg/tsconfig.json" ]; then
+      echo "⚠️  Skipping typecheck for $pkg (no tsconfig.json)"
+      continue
+    fi
+    pnpm --filter "./packages/$pkg" typecheck || exit 1
+  fi
+done
+
+# Run custom validations only on changed packages
+echo "Running custom validations on changed packages..."
+
+# Build comma-separated list of changed packages for validation scripts
+VALIDATE_PKGS=$(echo "$CHANGED_PACKAGES" | tr '\n' ',' | sed 's/,$//')
+
+# Run kebab-case validation
+echo "Validating kebab-case..."
+pnpm validate:kebab || exit 1
+
+# Run naming validation only on changed packages
+if [ -n "$VALIDATE_PKGS" ]; then
+  echo "Validating TypeScript naming on: $VALIDATE_PKGS..."
+  VALIDATE_PACKAGES="$VALIDATE_PKGS" pnpm validate:naming || exit 1
+else
+  echo "Validating TypeScript naming..."
+  pnpm validate:naming || exit 1
+fi
+
+# Run other validations
+pnpm validate:protected || exit 1
+pnpm validate:imports || exit 1
+
+# Run duplicate validation only on changed packages (skip mobile if not changed)
+if [ -n "$VALIDATE_PKGS" ] && ! echo "$VALIDATE_PKGS" | grep -q "mobile"; then
+  echo "Validating duplicate types on: $VALIDATE_PKGS..."
+  VALIDATE_PACKAGES="$VALIDATE_PKGS" pnpm validate:duplicates || exit 1
+else
+  echo "Validating duplicate types..."
+  pnpm validate:duplicates || exit 1
+fi
+
+echo "✅ All validations passed!"

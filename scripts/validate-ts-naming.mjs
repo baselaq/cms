@@ -35,8 +35,10 @@ const NAMING_PATTERNS = {
   GENERAL_INTERFACE: /^I[A-Z][A-Za-z0-9]*$/,
 };
 
-// Packages to validate
-const PACKAGES = ["backend", "web", "mobile", "shared"];
+// Packages to validate (can be overridden via environment variable)
+const PACKAGES = process.env.VALIDATE_PACKAGES
+  ? process.env.VALIDATE_PACKAGES.split(",")
+  : ["backend", "web", "mobile", "shared"];
 
 // Common source directory names
 const SOURCE_DIRS = ["src", "app", "lib"];

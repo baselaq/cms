@@ -11,6 +11,9 @@ importers:
       eslint:
         specifier: ^9.39.0
         version: 9.39.0(jiti@2.6.1)
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       husky:
         specifier: ^9.0.0
         version: 9.1.7
