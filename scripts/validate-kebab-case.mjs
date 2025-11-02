@@ -11,7 +11,19 @@ const __dirname = dirname(__filename);
 // Kebab-case regex pattern
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+// Helper function to detect non-kebab-case naming
+function isNonKebabCase(str) {
+  // Check if string uses PascalCase, camelCase, or snake_case
+  // Contains uppercase letters (PascalCase or camelCase)
+  const hasUppercase = /[A-Z]/.test(str);
+  // Contains underscores (snake_case)
+  const hasUnderscores = /_/.test(str);
+  // If it has uppercase or underscores, it's not kebab-case
+  return hasUppercase || hasUnderscores;
+}
+
 // NestJS-style file patterns (allowed to have dots, e.g., app.controller.ts)
+// Note: The prefix part (before the dot) is still validated for kebab-case
 const NESTJS_PATTERNS = [
   /\.controller\.tsx?$/,
   /\.service\.tsx?$/,
@@ -27,6 +39,7 @@ const NESTJS_PATTERNS = [
   /\.util\.tsx?$/,
   /\.decorator\.tsx?$/,
   /\.context\.tsx?$/,
+  /\.strategy\.tsx?$/,
 ];
 
 // React Native-style file patterns (allowed to have dots, e.g., config.base.ts, gesture-handler.native.ts)
@@ -42,21 +55,21 @@ const REACT_NATIVE_PATTERNS = [
 
 // Next.js file patterns (special route files)
 const NEXTJS_PATTERNS = [
-  /^page\.tsx?$/,           // page.tsx, page.ts
-  /^layout\.tsx?$/,         // layout.tsx, layout.ts
-  /^loading\.tsx?$/,        // loading.tsx, loading.ts
-  /^error\.tsx?$/,          // error.tsx, error.ts
-  /^not-found\.tsx?$/,      // not-found.tsx, not-found.ts
-  /^route\.tsx?$/,          // route.tsx, route.ts (API routes)
-  /^template\.tsx?$/,       // template.tsx, template.ts
-  /^default\.tsx?$/,        // default.tsx, default.ts
-  /^global-error\.tsx?$/,   // global-error.tsx, global-error.ts
+  /^page\.tsx?$/, // page.tsx, page.ts
+  /^layout\.tsx?$/, // layout.tsx, layout.ts
+  /^loading\.tsx?$/, // loading.tsx, loading.ts
+  /^error\.tsx?$/, // error.tsx, error.ts
+  /^not-found\.tsx?$/, // not-found.tsx, not-found.ts
+  /^route\.tsx?$/, // route.tsx, route.ts (API routes)
+  /^template\.tsx?$/, // template.tsx, template.ts
+  /^default\.tsx?$/, // default.tsx, default.ts
+  /^global-error\.tsx?$/, // global-error.tsx, global-error.ts
   /^opengraph-image\.tsx?$/, // opengraph-image.tsx
-  /^icon\.tsx?$/,           // icon.tsx
-  /^apple-icon\.tsx?$/,     // apple-icon.tsx
-  /^favicon\.ico$/,         // favicon.ico
-  /^robots\.txt$/,          // robots.txt
-  /^sitemap\.tsx?$/,        // sitemap.tsx, sitemap.ts
+  /^icon\.tsx?$/, // icon.tsx
+  /^apple-icon\.tsx?$/, // apple-icon.tsx
+  /^favicon\.ico$/, // favicon.ico
+  /^robots\.txt$/, // robots.txt
+  /^sitemap\.tsx?$/, // sitemap.tsx, sitemap.ts
 ];
 
 // Files and directories that are allowed to not follow kebab-case
@@ -158,8 +171,16 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
           continue;
         }
 
-        // Check directory name
-        if (!KEBAB_CASE_PATTERN.test(entry)) {
+        // Check directory name - must be kebab-case only
+        // Report if it uses PascalCase, camelCase, or snake_case
+        if (isNonKebabCase(entry)) {
+          files.push({
+            path: packageRelativePath,
+            type: "directory",
+            name: entry,
+          });
+        } else if (!KEBAB_CASE_PATTERN.test(entry)) {
+          // Also report if it doesn't match kebab-case pattern (e.g., contains spaces, special chars)
           files.push({
             path: packageRelativePath,
             type: "directory",
@@ -200,19 +221,55 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
           shouldValidate = false;
         } else if (NESTJS_PATTERNS.some((pattern) => pattern.test(entry))) {
           // Skip NestJS-style files with dots (e.g., app.controller.ts)
-          shouldValidate = false;
-        } else if (REACT_NATIVE_PATTERNS.some((pattern) => pattern.test(entry))) {
+          // But extract prefix to validate it
+          const ext = entry.substring(entry.lastIndexOf("."));
+          const nameWithoutExt = basename(entry, ext);
+          const prefix = nameWithoutExt.split(".")[0];
+          if (isNonKebabCase(prefix) || !KEBAB_CASE_PATTERN.test(prefix)) {
+            files.push({
+              path: packageRelativePath,
+              type: "file",
+              name: entry,
+            });
+          }
+          shouldValidate = false; // Already validated above, skip further validation
+        } else if (
+          REACT_NATIVE_PATTERNS.some((pattern) => pattern.test(entry))
+        ) {
           // Skip React Native-style files with dots (e.g., config.base.ts)
           shouldValidate = false;
         } else {
           const ext = entry.substring(entry.lastIndexOf("."));
           nameToCheck = basename(entry, ext);
           shouldValidate = VALIDATED_EXTENSIONS.has(ext);
+
+          // If filename contains dots (e.g., jwt.strategy.ts), validate only the prefix part
+          if (shouldValidate && nameToCheck.includes(".")) {
+            const prefix = nameToCheck.split(".")[0];
+            // Validate the prefix part (before the first dot)
+            if (isNonKebabCase(prefix) || !KEBAB_CASE_PATTERN.test(prefix)) {
+              files.push({
+                path: packageRelativePath,
+                type: "file",
+                name: entry,
+              });
+            }
+            // Skip further validation since we already checked
+            shouldValidate = false;
+          }
         }
 
         if (shouldValidate) {
-          // Check file name (without extension)
-          if (!KEBAB_CASE_PATTERN.test(nameToCheck)) {
+          // Check file name (without extension) - must be kebab-case only
+          // Report if it uses PascalCase, camelCase, or snake_case
+          if (isNonKebabCase(nameToCheck)) {
+            files.push({
+              path: packageRelativePath,
+              type: "file",
+              name: entry,
+            });
+          } else if (!KEBAB_CASE_PATTERN.test(nameToCheck)) {
+            // Also report if it doesn't match kebab-case pattern (e.g., contains spaces, special chars)
             files.push({
               path: packageRelativePath,
               type: "file",
@@ -295,6 +352,11 @@ async function validateKebabCase() {
       console.log(
         "   - Examples: user-profile.tsx, api-client.ts, course-list.page.tsx"
       );
+      console.log("");
+      console.log("❌ Rejected naming conventions:");
+      console.log("   - PascalCase: MyFile.ts, MyComponent.tsx");
+      console.log("   - camelCase: myFile.ts, myComponent.tsx");
+      console.log("   - snake_case: my_file.ts, my_component.tsx");
       console.log("");
 
       process.exit(1);
