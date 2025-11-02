@@ -11,6 +11,27 @@ const __dirname = dirname(__filename);
 // Kebab-case regex pattern
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+// Helper functions to detect naming conventions
+function hasPascalCase(str) {
+  // Contains uppercase letters (PascalCase)
+  return /[A-Z]/.test(str);
+}
+
+function hasCamelCase(str) {
+  // Contains uppercase letters not at the start (camelCase)
+  return /[A-Z]/.test(str) && !/^[A-Z]/.test(str);
+}
+
+function hasSnakeCase(str) {
+  // Contains underscores (snake_case)
+  return /_/.test(str);
+}
+
+function isNonKebabCase(str) {
+  // Check if string uses PascalCase, camelCase, or snake_case
+  return hasPascalCase(str) || hasSnakeCase(str);
+}
+
 // NestJS-style file patterns (allowed to have dots, e.g., app.controller.ts)
 const NESTJS_PATTERNS = [
   /\.controller\.tsx?$/,
@@ -42,21 +63,21 @@ const REACT_NATIVE_PATTERNS = [
 
 // Next.js file patterns (special route files)
 const NEXTJS_PATTERNS = [
-  /^page\.tsx?$/,           // page.tsx, page.ts
-  /^layout\.tsx?$/,         // layout.tsx, layout.ts
-  /^loading\.tsx?$/,        // loading.tsx, loading.ts
-  /^error\.tsx?$/,          // error.tsx, error.ts
-  /^not-found\.tsx?$/,      // not-found.tsx, not-found.ts
-  /^route\.tsx?$/,          // route.tsx, route.ts (API routes)
-  /^template\.tsx?$/,       // template.tsx, template.ts
-  /^default\.tsx?$/,        // default.tsx, default.ts
-  /^global-error\.tsx?$/,   // global-error.tsx, global-error.ts
+  /^page\.tsx?$/, // page.tsx, page.ts
+  /^layout\.tsx?$/, // layout.tsx, layout.ts
+  /^loading\.tsx?$/, // loading.tsx, loading.ts
+  /^error\.tsx?$/, // error.tsx, error.ts
+  /^not-found\.tsx?$/, // not-found.tsx, not-found.ts
+  /^route\.tsx?$/, // route.tsx, route.ts (API routes)
+  /^template\.tsx?$/, // template.tsx, template.ts
+  /^default\.tsx?$/, // default.tsx, default.ts
+  /^global-error\.tsx?$/, // global-error.tsx, global-error.ts
   /^opengraph-image\.tsx?$/, // opengraph-image.tsx
-  /^icon\.tsx?$/,           // icon.tsx
-  /^apple-icon\.tsx?$/,     // apple-icon.tsx
-  /^favicon\.ico$/,         // favicon.ico
-  /^robots\.txt$/,          // robots.txt
-  /^sitemap\.tsx?$/,        // sitemap.tsx, sitemap.ts
+  /^icon\.tsx?$/, // icon.tsx
+  /^apple-icon\.tsx?$/, // apple-icon.tsx
+  /^favicon\.ico$/, // favicon.ico
+  /^robots\.txt$/, // robots.txt
+  /^sitemap\.tsx?$/, // sitemap.tsx, sitemap.ts
 ];
 
 // Files and directories that are allowed to not follow kebab-case
@@ -159,7 +180,8 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
         }
 
         // Check directory name
-        if (!KEBAB_CASE_PATTERN.test(entry)) {
+        // Skip if it uses PascalCase, camelCase, or snake_case
+        if (!KEBAB_CASE_PATTERN.test(entry) && !isNonKebabCase(entry)) {
           files.push({
             path: packageRelativePath,
             type: "directory",
@@ -201,7 +223,9 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
         } else if (NESTJS_PATTERNS.some((pattern) => pattern.test(entry))) {
           // Skip NestJS-style files with dots (e.g., app.controller.ts)
           shouldValidate = false;
-        } else if (REACT_NATIVE_PATTERNS.some((pattern) => pattern.test(entry))) {
+        } else if (
+          REACT_NATIVE_PATTERNS.some((pattern) => pattern.test(entry))
+        ) {
           // Skip React Native-style files with dots (e.g., config.base.ts)
           shouldValidate = false;
         } else {
@@ -212,7 +236,11 @@ async function getAllFiles(dir, basePath = "", packageName = "") {
 
         if (shouldValidate) {
           // Check file name (without extension)
-          if (!KEBAB_CASE_PATTERN.test(nameToCheck)) {
+          // Skip if it uses PascalCase, camelCase, or snake_case
+          if (
+            !KEBAB_CASE_PATTERN.test(nameToCheck) &&
+            !isNonKebabCase(nameToCheck)
+          ) {
             files.push({
               path: packageRelativePath,
               type: "file",

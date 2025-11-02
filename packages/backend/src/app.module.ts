@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TenantModule } from './tenant/tenant.module';
 import { TestTenantController } from './test-tenant.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { TestTenantController } from './test-tenant.controller';
       envFilePath: ['.env.local', '.env'],
     }),
     TenantModule,
+    AuthModule,
   ],
   controllers: [AppController, TestTenantController],
   providers: [AppService],
