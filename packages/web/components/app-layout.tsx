@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useAuth } from "@/contexts/auth-context";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -36,6 +37,11 @@ export function AppLayout({
   breadcrumbs?: BreadcrumbItem[];
 }) {
   const pathname = usePathname();
+  const { isLoading } = useAuth();
+
+  // Auth routes don't need the app layout
+  const authRoutes = ["/login", "/signup", "/register"];
+  const isAuthRoute = authRoutes.includes(pathname);
 
   // Auto-generate breadcrumbs from pathname if not provided
   const autoBreadcrumbs = React.useMemo(() => {
@@ -55,6 +61,20 @@ export function AppLayout({
 
     return items;
   }, [pathname, breadcrumbs]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Return plain layout for auth routes
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <SidebarProvider>

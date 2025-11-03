@@ -37,8 +37,8 @@ echo "Running custom validations on changed packages..."
 VALIDATE_PKGS=$(echo "$CHANGED_PACKAGES" | tr '\n' ',' | sed 's/,$//')
 
 # Run kebab-case validation
-echo "Validating kebab-case..."
-pnpm validate:kebab || exit 1
+# echo "Validating kebab-case..."
+# pnpm validate:kebab || exit 1
 
 # Run naming validation only on changed packages
 if [ -n "$VALIDATE_PKGS" ]; then

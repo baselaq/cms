@@ -20,10 +20,10 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 255 })
   password: string; // Hashed password
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'first_name' })
   firstName: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'last_name' })
   lastName: string;
 
   @Column({
