@@ -1,5 +1,5 @@
 {
-  "name": "shared",
+  "name": "@cms/shared",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -7,7 +7,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^1.13.1"
+  },
   "devDependencies": {
     "typescript": "^5"
   }

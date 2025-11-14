@@ -33,6 +33,9 @@ const NAMING_PATTERNS = {
 
   // General interface pattern (must start with I)
   GENERAL_INTERFACE: /^I[A-Z][A-Za-z0-9]*$/,
+
+  // General types pattern (must start with T)
+  GENERAL_TYPES: /^T[A-Z][A-Za-z0-9]*$/,
 };
 
 // Packages to validate (can be overridden via environment variable)
@@ -167,6 +170,27 @@ function isCustomHook(content) {
   return hookPatterns.some((pattern) => pattern.test(content));
 }
 
+function validateTypeName(typeName, context) {
+  // All types must start with 'T'
+  if (!typeName.startsWith("T")) {
+    return {
+      valid: false,
+      reason: 'Type names must start with "T"',
+      suggestion: `T${typeName}`,
+    };
+  }
+
+  // General type pattern check
+  if (!NAMING_PATTERNS.GENERAL_TYPES.test(typeName)) {
+    return {
+      valid: false,
+      reason: 'Type names must follow PascalCase and start with "T"',
+    };
+  }
+
+  return { valid: true };
+}
+
 function validateInterfaceName(interfaceName, context) {
   // All interfaces must start with 'I'
   if (!interfaceName.startsWith("I")) {
@@ -290,10 +314,11 @@ async function validateTsNaming() {
             };
 
             for (const interfaceInfo of interfaces) {
-              const validation = validateInterfaceName(
-                interfaceInfo.name,
-                context
-              );
+              // Validate types and interfaces separately
+              const validation =
+                interfaceInfo.type === "type"
+                  ? validateTypeName(interfaceInfo.name, context)
+                  : validateInterfaceName(interfaceInfo.name, context);
 
               if (!validation.valid) {
                 allViolations.push({
@@ -316,7 +341,9 @@ async function validateTsNaming() {
     }
 
     if (allViolations.length === 0) {
-      console.log("✅ All TypeScript interfaces follow naming conventions");
+      console.log(
+        "✅ All TypeScript interfaces and types follow naming conventions"
+      );
       process.exit(0);
     } else {
       console.log("❌ Found TypeScript naming convention violations:");
@@ -331,8 +358,9 @@ async function validateTsNaming() {
           reason,
           suggestion,
         }) => {
+          const typeLabel = type === "type" ? "type" : "interface";
           console.log(`  📄 ${file}:${line}`);
-          console.log(`     ${type}: ${interfaceName}`);
+          console.log(`     ${typeLabel}: ${interfaceName}`);
           console.log(`     Issue: ${reason}`);
           if (suggestion) {
             console.log(`     Suggestion: ${suggestion}`);
@@ -343,6 +371,7 @@ async function validateTsNaming() {
 
       console.log("💡 TypeScript naming conventions:");
       console.log('   - All interfaces must start with "I"');
+      console.log('   - All types must start with "T"');
       console.log("   - Component props: I<ComponentName>Props");
       console.log("   - Function params: I<FunctionName>Params");
       console.log("   - Function returns: I<FunctionName>Return");
@@ -350,6 +379,7 @@ async function validateTsNaming() {
       console.log("   - API responses: I<ApiName>Response");
       console.log("   - Hook params: IUse<HookName>Params");
       console.log("   - Hook returns: IUse<HookName>Return");
+      console.log("   - General types: T<TypeName> (e.g., TUser, TResponse)");
       console.log("");
 
       process.exit(1);

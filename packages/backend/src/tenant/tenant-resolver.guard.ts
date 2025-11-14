@@ -28,8 +28,11 @@ export class TenantResolverGuard implements CanActivate {
     const startTime = Date.now();
 
     try {
-      // Extract subdomain from hostname
-      const subdomain = this.extractSubdomain(request.hostname);
+      // Extract subdomain from hostname or headers
+      const subdomain = this.extractSubdomain(
+        request.hostname,
+        request.headers as Record<string, string | string[] | undefined>,
+      );
 
       if (!subdomain) {
         throw new BadRequestException(
@@ -129,10 +132,25 @@ export class TenantResolverGuard implements CanActivate {
   }
 
   /**
-   * Extract subdomain from hostname
+   * Extract subdomain from hostname or headers
    * Handles: subdomain.example.com, subdomain.localhost:3000, etc.
+   * Also checks X-Tenant-Subdomain header for server-to-server requests
    */
-  private extractSubdomain(hostname: string): string | null {
+  private extractSubdomain(
+    hostname: string,
+    headers?: Record<string, string | string[] | undefined>,
+  ): string | null {
+    // Check for subdomain in header first (for server-to-server requests)
+    if (headers) {
+      const headerSubdomain = headers['x-tenant-subdomain'];
+      if (headerSubdomain && typeof headerSubdomain === 'string') {
+        const subdomain = headerSubdomain.trim();
+        if (this.isValidSubdomain(subdomain)) {
+          return subdomain;
+        }
+      }
+    }
+
     // Remove port if present
     const host = hostname.split(':')[0];
 
