@@ -22,7 +22,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-type NavItem = {
+export type NavItem = {
   title: string;
   url: string;
   icon?: IconSvgElement;

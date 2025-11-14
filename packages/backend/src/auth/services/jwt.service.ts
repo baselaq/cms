@@ -30,7 +30,7 @@ export class AuthJwtService {
   /**
    * Generate a per-tenant secret based on tenant info and master secret
    */
-  private getTenantSecret(tenantContext: ITenantContext): string {
+  getTenantSecret(tenantContext: ITenantContext): string {
     const masterSecret =
       this.configService.get<string>('JWT_SECRET') || 'default-secret';
     // Combine master secret with tenant-specific info for unique per-tenant secrets
@@ -93,22 +93,74 @@ export class AuthJwtService {
   verifyAccessToken(token: string, tenantContext: ITenantContext): IJwtPayload {
     try {
       const tenantSecret = this.getTenantSecret(tenantContext);
+
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.debug(
+          `Verifying token for tenant ${tenantContext.subdomain} (${tenantContext.tenantId})`,
+        );
+        this.logger.debug(`Secret length: ${tenantSecret.length}`);
+      }
+
       const payload = this.jwtService.verify<IJwtPayload>(token, {
         secret: tenantSecret,
       });
 
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.debug(
+          `Token payload: ${JSON.stringify({ sub: payload.sub, tenantId: payload.tenantId, type: payload.type })}`,
+        );
+      }
+
       if (payload.type !== 'access') {
+        this.logger.error(
+          `Invalid token type: expected 'access', got '${payload.type}'`,
+        );
         throw new UnauthorizedException('Invalid token type');
       }
 
       if (payload.tenantId !== tenantContext.tenantId) {
+        this.logger.error(
+          `Token tenant mismatch: token has ${payload.tenantId}, context has ${tenantContext.tenantId}`,
+        );
         throw new UnauthorizedException('Token does not match tenant');
       }
 
       return payload;
     } catch (error) {
-      this.logger.error('Token verification failed', error);
-      throw new UnauthorizedException('Invalid or expired token');
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Provide more specific error messages
+      let specificError = 'Invalid or expired token';
+      if (
+        errorMessage.includes('expired') ||
+        errorMessage.includes('jwt expired')
+      ) {
+        specificError = 'Token has expired';
+      } else if (
+        errorMessage.includes('invalid signature') ||
+        errorMessage.includes('invalid token')
+      ) {
+        specificError = 'Token signature is invalid (wrong secret)';
+      } else if (errorMessage.includes('jwt malformed')) {
+        specificError = 'Token is malformed';
+      }
+
+      this.logger.error(
+        `❌ Token verification failed for tenant ${tenantContext.subdomain} (${tenantContext.tenantId}): ${errorMessage}`,
+      );
+      if (process.env.NODE_ENV === 'development') {
+        const errorType =
+          error instanceof Error ? error.constructor.name : typeof error;
+        this.logger.debug(`Error type: ${errorType}`);
+        this.logger.debug(
+          `Tenant secret length: ${this.getTenantSecret(tenantContext).length}`,
+        );
+        if (error instanceof Error && error.stack) {
+          this.logger.debug(`Error stack: ${error.stack}`);
+        }
+      }
+      throw new UnauthorizedException(specificError);
     }
   }
 

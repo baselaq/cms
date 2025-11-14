@@ -39,9 +39,12 @@ export function useLogin() {
     mutationFn: async (data: LoginData) => {
       const response = await post<AuthResponse>("/auth/login", data);
       const authData = response.data;
+      console.log("authData login", authData);
 
       // Save tokens to storage
       if (authData.accessToken && authData.refreshToken) {
+        console.log("accessToken", authData.accessToken);
+        console.log("refreshToken", authData.refreshToken);
         await httpClient.saveTokens(
           authData.accessToken,
           authData.refreshToken
@@ -51,10 +54,23 @@ export function useLogin() {
       return authData;
     },
     onSuccess: async () => {
-      await checkAuth();
+      // Invalidate queries first
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+
+      // Redirect immediately - don't wait for checkAuth which might fail
+      // The next page will handle auth check naturally
       router.push("/");
-      router.refresh();
+
+      // Try to fetch user in background, but don't block redirect
+      // Use setTimeout to ensure redirect happens first
+      setTimeout(async () => {
+        try {
+          await checkAuth();
+        } catch (error) {
+          // Silently fail - user is already redirected
+          console.warn("Background auth check failed:", error);
+        }
+      }, 100);
     },
   });
 }
@@ -80,10 +96,23 @@ export function useRegister() {
       return authData;
     },
     onSuccess: async () => {
-      await checkAuth();
+      // Invalidate queries first
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+
+      // Redirect immediately - don't wait for checkAuth which might fail
+      // The next page will handle auth check naturally
       router.push("/");
-      router.refresh();
+
+      // Try to fetch user in background, but don't block redirect
+      // Use setTimeout to ensure redirect happens first
+      setTimeout(async () => {
+        try {
+          await checkAuth();
+        } catch (error) {
+          // Silently fail - user is already redirected
+          console.warn("Background auth check failed:", error);
+        }
+      }, 100);
     },
   });
 }

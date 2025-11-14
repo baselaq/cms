@@ -4,6 +4,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
   AxiosError,
+  AxiosRequestHeaders,
 } from "axios";
 import type { ITokenStorage } from "./token-storage";
 
@@ -61,11 +62,89 @@ export class HttpClient {
     // Request interceptor for adding auth token
     this.instance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
+        // Ensure headers object exists
+        if (!config.headers) {
+          config.headers = {} as AxiosRequestHeaders;
+        }
+
         // Get token from storage if available
         if (this.tokenStorage) {
-          const token = await this.tokenStorage.getAccessToken();
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+          try {
+            const token = await this.tokenStorage.getAccessToken();
+            if (token) {
+              // Ensure Authorization header is set correctly
+              config.headers.Authorization = `Bearer ${token}`;
+              if (process.env.NODE_ENV === "development") {
+                if (config.url?.includes("/auth/me")) {
+                  console.log(
+                    "✅ [http-client] Adding token to /auth/me request"
+                  );
+                  console.log(
+                    "✅ [http-client] Token preview:",
+                    token.substring(0, 30) + "..."
+                  );
+                  console.log("✅ [http-client] Token length:", token.length);
+                  console.log(
+                    "✅ [http-client] Full URL:",
+                    `${config.baseURL}${config.url}`
+                  );
+                  console.log(
+                    "✅ [http-client] Authorization header value:",
+                    config.headers.Authorization
+                      ? config.headers.Authorization.substring(0, 50) + "..."
+                      : "MISSING"
+                  );
+                  // Verify header is actually set
+                  if (
+                    !config.headers.Authorization ||
+                    !config.headers.Authorization.startsWith("Bearer ")
+                  ) {
+                    console.error(
+                      "❌ [http-client] Authorization header not set correctly!"
+                    );
+                    console.error(
+                      "❌ [http-client] Headers object:",
+                      Object.keys(config.headers || {})
+                    );
+                  }
+                }
+                console.log(
+                  `🔑 [http-client] Request to ${
+                    config.url
+                  }: Authorization header ${
+                    config.headers.Authorization ? "SET" : "MISSING"
+                  }`
+                );
+              }
+            } else {
+              if (process.env.NODE_ENV === "development") {
+                if (config.url?.includes("/auth/me")) {
+                  console.error(
+                    "❌ [http-client] No access token found in storage for /auth/me request"
+                  );
+                  console.error("❌ [http-client] URL:", config.url);
+                  console.error("❌ [http-client] Base URL:", config.baseURL);
+                  console.error(
+                    "❌ [http-client] Full URL would be:",
+                    `${config.baseURL}${config.url}`
+                  );
+                }
+                console.warn(
+                  `⚠️ [http-client] Request to ${config.url}: No token in storage`
+                );
+              }
+            }
+          } catch (error) {
+            if (process.env.NODE_ENV === "development") {
+              console.error(
+                "❌ [http-client] Error getting token from storage:",
+                error
+              );
+            }
+          }
+        } else {
+          if (process.env.NODE_ENV === "development") {
+            console.error("❌ [http-client] No tokenStorage configured!");
           }
         }
         return config;
@@ -182,8 +261,14 @@ export class HttpClient {
       this.instance.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${token}`;
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔑 [http-client] Token set on axios defaults");
+      }
     } else {
       delete this.instance.defaults.headers.common["Authorization"];
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔑 [http-client] Token removed from axios defaults");
+      }
     }
   }
 
@@ -236,6 +321,43 @@ export class HttpClient {
       await this.tokenStorage.setAccessToken(accessToken);
       await this.tokenStorage.setRefreshToken(refreshToken);
       this.setAuthToken(accessToken);
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ [http-client] Tokens saved successfully");
+        console.log(
+          "✅ [http-client] Access token preview:",
+          accessToken.substring(0, 30) + "..."
+        );
+        // Wait a bit longer for cookie to be fully set
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        // Verify token was stored
+        const storedToken = await this.tokenStorage.getAccessToken();
+        console.log(
+          "✅ [http-client] Token verification:",
+          storedToken ? "FOUND" : "NOT FOUND"
+        );
+        if (storedToken) {
+          console.log(
+            "✅ [http-client] Stored token preview:",
+            storedToken.substring(0, 30) + "..."
+          );
+          // Verify tokens match
+          if (storedToken === accessToken) {
+            console.log("✅ [http-client] Token matches saved token");
+          } else {
+            console.error(
+              "❌ [http-client] Token mismatch! Saved token differs from retrieved token"
+            );
+          }
+        } else {
+          console.error("❌ [http-client] Token was NOT found after saving!");
+        }
+      }
+    } else {
+      if (process.env.NODE_ENV === "development") {
+        console.error(
+          "❌ [http-client] Cannot save tokens: no tokenStorage configured"
+        );
+      }
     }
   }
 

@@ -6,7 +6,14 @@ import {
 } from '@nestjs/common';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ITenantDbConfig, IConnectionMetrics } from './tenant.context';
-import { UserEntity, UserTokenEntity } from '../database/tenant/entities';
+import {
+  UserEntity,
+  UserTokenEntity,
+  RoleEntity,
+  PermissionEntity,
+  UserRoleEntity,
+  RolePermissionEntity,
+} from '../database/tenant/entities';
 
 @Injectable()
 export class ConnectionManagerService implements OnModuleInit, OnModuleDestroy {
@@ -59,7 +66,14 @@ export class ConnectionManagerService implements OnModuleInit, OnModuleDestroy {
         poolSize: config.poolSize || 10,
         synchronize: false,
         logging: process.env.NODE_ENV === 'development',
-        entities: [UserEntity, UserTokenEntity],
+        entities: [
+          UserEntity,
+          UserTokenEntity,
+          RoleEntity,
+          PermissionEntity,
+          UserRoleEntity,
+          RolePermissionEntity,
+        ],
       };
 
       const dataSource = new DataSource(dataSourceOptions);

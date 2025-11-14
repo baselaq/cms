@@ -5,6 +5,7 @@ import { redisStore } from 'cache-manager-redis-yet';
 import type { IRedisConfig } from '../config/redis.config';
 import redisConfig from '../config/redis.config';
 import { MasterDatabaseModule } from '../database/master/master-database.module';
+import { AuthModule } from '../auth/auth.module';
 import { TenantMetadataService } from './tenant-metadata.service';
 import { ConnectionManagerService } from './connection-manager.service';
 import { TenantCacheService } from './tenant-cache.service';
@@ -15,6 +16,7 @@ import { TenantResolverGuard } from './tenant-resolver.guard';
 @Module({
   imports: [
     ConfigModule.forFeature(redisConfig),
+    AuthModule, // Import AuthModule to access RoleSeedService
     CacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
