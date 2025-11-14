@@ -1,0 +1,125 @@
+{
+  "permissions": [
+    {
+      "name": "team.read",
+      "module": "team",
+      "action": "read",
+      "description": "View team information"
+    },
+    {
+      "name": "team.write",
+      "module": "team",
+      "action": "write",
+      "description": "Create and edit team information"
+    },
+    {
+      "name": "team.delete",
+      "module": "team",
+      "action": "delete",
+      "description": "Delete team information"
+    },
+    {
+      "name": "calendar.read",
+      "module": "calendar",
+      "action": "read",
+      "description": "View calendar events"
+    },
+    {
+      "name": "calendar.write",
+      "module": "calendar",
+      "action": "write",
+      "description": "Create and edit calendar events"
+    },
+    {
+      "name": "calendar.delete",
+      "module": "calendar",
+      "action": "delete",
+      "description": "Delete calendar events"
+    },
+    {
+      "name": "communication.read",
+      "module": "communication",
+      "action": "read",
+      "description": "View messages and posts"
+    },
+    {
+      "name": "communication.write",
+      "module": "communication",
+      "action": "write",
+      "description": "Send messages and create posts"
+    },
+    {
+      "name": "communication.delete",
+      "module": "communication",
+      "action": "delete",
+      "description": "Delete messages and posts"
+    },
+    {
+      "name": "development.read",
+      "module": "development",
+      "action": "read",
+      "description": "View training materials and performance data"
+    },
+    {
+      "name": "development.write",
+      "module": "development",
+      "action": "write",
+      "description": "Create and edit training materials"
+    },
+    {
+      "name": "development.delete",
+      "module": "development",
+      "action": "delete",
+      "description": "Delete training materials"
+    },
+    {
+      "name": "scheduling.read",
+      "module": "scheduling",
+      "action": "read",
+      "description": "View schedules and bookings"
+    },
+    {
+      "name": "scheduling.write",
+      "module": "scheduling",
+      "action": "write",
+      "description": "Create and edit schedules"
+    },
+    {
+      "name": "scheduling.delete",
+      "module": "scheduling",
+      "action": "delete",
+      "description": "Delete schedules"
+    },
+    {
+      "name": "administration.read",
+      "module": "administration",
+      "action": "read",
+      "description": "View administration data"
+    },
+    {
+      "name": "administration.write",
+      "module": "administration",
+      "action": "write",
+      "description": "Manage administration data"
+    },
+    {
+      "name": "administration.delete",
+      "module": "administration",
+      "action": "delete",
+      "description": "Delete administration data"
+    },
+    {
+      "name": "settings.read",
+      "module": "settings",
+      "action": "read",
+      "description": "View settings"
+    },
+    {
+      "name": "settings.write",
+      "module": "settings",
+      "action": "write",
+      "description": "Modify settings"
+    }
+  ]
+}
+

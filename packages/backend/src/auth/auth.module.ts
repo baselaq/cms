@@ -6,6 +6,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './services/auth.service';
 import { AuthJwtService } from './services/jwt.service';
 import { TokenBlacklistService } from './services/token-blacklist.service';
+import { PermissionService } from './services/permission.service';
+import { RoleSeedService } from './services/role-seed.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -17,7 +19,20 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     ConfigModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthJwtService, TokenBlacklistService, JwtStrategy],
-  exports: [AuthService, AuthJwtService, TokenBlacklistService],
+  providers: [
+    AuthService,
+    AuthJwtService,
+    TokenBlacklistService,
+    PermissionService,
+    RoleSeedService,
+    JwtStrategy,
+  ],
+  exports: [
+    AuthService,
+    AuthJwtService,
+    TokenBlacklistService,
+    PermissionService,
+    RoleSeedService,
+  ],
 })
 export class AuthModule {}

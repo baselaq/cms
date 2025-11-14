@@ -1,6 +1,11 @@
 import { HttpClient, IHttpClientConfig } from "./http-client";
 import type { ITokenStorage } from "./token-storage";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import type {
+  AxiosError,
+  AxiosRequestConfig,
+  AxiosRequestHeaders,
+  AxiosResponse,
+} from "axios";
 
 export interface IHttpClientInitOptions {
   baseURL?: string;
@@ -21,15 +26,15 @@ export interface IHttpClientInitOptions {
  * Automatically detects environment and uses appropriate env vars
  */
 export function initializeHttpClient(options: IHttpClientInitOptions) {
-  // Auto-detect baseURL from environment
+  // Get baseURL from environment variables only (static configuration)
   // Web: NEXT_PUBLIC_API_URL, Mobile: EXPO_PUBLIC_API_URL
   const getDefaultBaseURL = () => {
     if (typeof window !== "undefined") {
       // Web platform - Next.js
-      return "http://club1.localhost:3000";
+      return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     }
     // Mobile platform - Expo
-    return "http://club1.localhost:3000";
+    return process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
   };
 
   const {
@@ -53,16 +58,63 @@ export function initializeHttpClient(options: IHttpClientInitOptions) {
   const axiosInstance = httpClient.getAxiosInstance();
 
   // Add subdomain header interceptor if getSubdomain is provided (web platform)
+  // This MUST be added before other interceptors to ensure header is set early
   if (getSubdomain) {
+    // Use request interceptor with high priority (runs first)
     axiosInstance.interceptors.request.use(
       (config) => {
         const subdomain = getSubdomain();
         if (subdomain && config.headers) {
+          // Ensure headers object exists
+          if (!config.headers) {
+            config.headers = {} as AxiosRequestHeaders;
+          }
           config.headers["X-Tenant-Subdomain"] = subdomain;
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `🔗 [http-client] Adding X-Tenant-Subdomain header: ${subdomain}`
+            );
+            console.log(
+              `🔗 [http-client] Current hostname: ${
+                typeof window !== "undefined" ? window.location.hostname : "SSR"
+              }`
+            );
+            console.log(
+              `🔗 [http-client] Request URL: ${config.baseURL}${config.url}`
+            );
+            console.log(
+              `🔗 [http-client] Full request config:`,
+              JSON.stringify(
+                {
+                  baseURL: config.baseURL,
+                  url: config.url,
+                  method: config.method,
+                  headers: {
+                    "X-Tenant-Subdomain": config.headers["X-Tenant-Subdomain"],
+                    "Content-Type": config.headers["Content-Type"],
+                  },
+                },
+                null,
+                2
+              )
+            );
+          }
+        } else {
+          if (process.env.NODE_ENV === "development") {
+            console.error(
+              `❌ [http-client] No subdomain extracted from hostname: ${
+                typeof window !== "undefined" ? window.location.hostname : "SSR"
+              }`
+            );
+            console.error(
+              `❌ [http-client] Request will fail without subdomain header!`
+            );
+          }
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
+      { synchronous: false, runWhen: () => true }
     );
   }
 

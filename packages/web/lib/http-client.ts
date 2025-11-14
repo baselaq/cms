@@ -13,7 +13,21 @@ export function setGlobalErrorHandler(handler: (error: AxiosError) => void) {
 }
 
 // Initialize HTTP client with web-specific configuration
+// BaseURL is read from NEXT_PUBLIC_API_URL environment variable only
+const apiBaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+// Log the baseURL in development to help debug
+if (process.env.NODE_ENV === "development") {
+  console.log(`🌐 [http-client] API Base URL: ${apiBaseURL}`);
+  console.log(
+    `🌐 [http-client] Current hostname: ${
+      typeof window !== "undefined" ? window.location.hostname : "SSR"
+    }`
+  );
+}
+
 const httpClientInit = initializeHttpClient({
+  baseURL: apiBaseURL,
   tokenStorage: new WebTokenStorage(),
   refreshTokenEndpoint: "/auth/refresh",
   getSubdomain: extractSubdomainFromHostname,

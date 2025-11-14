@@ -12,15 +12,18 @@ import { TenantMetadataService } from './tenant-metadata.service';
 import { ConnectionManagerService } from './connection-manager.service';
 import { TenantCacheService } from './tenant-cache.service';
 import { ITenantContext } from './tenant.context';
+import { RoleSeedService } from '../auth/services/role-seed.service';
 
 @Injectable()
 export class TenantResolverGuard implements CanActivate {
   private readonly logger = new Logger(TenantResolverGuard.name);
+  private readonly seedingChecked = new Set<string>(); // Track which tenants we've checked for seeding
 
   constructor(
     private readonly tenantMetadataService: TenantMetadataService,
     private readonly connectionManager: ConnectionManagerService,
     private readonly cacheService: TenantCacheService,
+    private readonly roleSeedService: RoleSeedService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -98,6 +101,21 @@ export class TenantResolverGuard implements CanActivate {
         metadata,
       };
 
+      // Auto-seed roles and permissions if not already seeded
+      // Only check once per tenant to avoid unnecessary DB queries
+      if (!this.seedingChecked.has(metadata.id)) {
+        this.seedingChecked.add(metadata.id);
+        // This runs asynchronously in the background to not block the request
+        this.roleSeedService.seedIfNeeded(tenantContext).catch((error) => {
+          this.logger.error(
+            `Failed to auto-seed roles for tenant ${metadata.id}:`,
+            error,
+          );
+          // Remove from checked set on error so we can retry
+          this.seedingChecked.delete(metadata.id);
+        });
+      }
+
       // Attach tenant context to request
       request.tenantContext = tenantContext;
 
@@ -140,14 +158,47 @@ export class TenantResolverGuard implements CanActivate {
     hostname: string,
     headers?: Record<string, string | string[] | undefined>,
   ): string | null {
-    // Check for subdomain in header first (for server-to-server requests)
+    // Check for subdomain in header first (for server-to-server requests and localhost)
     if (headers) {
-      const headerSubdomain = headers['x-tenant-subdomain'];
-      if (headerSubdomain && typeof headerSubdomain === 'string') {
-        const subdomain = headerSubdomain.trim();
-        if (this.isValidSubdomain(subdomain)) {
+      // Express normalizes headers to lowercase, so check both formats
+      const headerSubdomain =
+        headers['x-tenant-subdomain'] || headers['X-Tenant-Subdomain'];
+      if (headerSubdomain) {
+        const subdomain =
+          typeof headerSubdomain === 'string'
+            ? headerSubdomain.trim()
+            : Array.isArray(headerSubdomain)
+              ? headerSubdomain[0]?.trim()
+              : null;
+        if (subdomain && this.isValidSubdomain(subdomain)) {
+          this.logger.debug(
+            `Using subdomain from X-Tenant-Subdomain header: ${subdomain}`,
+          );
           return subdomain;
+        } else if (subdomain) {
+          this.logger.warn(`Invalid subdomain in header: ${subdomain}`);
         }
+      } else if (process.env.NODE_ENV === 'development') {
+        this.logger.debug(
+          `No X-Tenant-Subdomain header found. Available headers: ${Object.keys(headers).join(', ')}`,
+        );
+        this.logger.debug(
+          `Header values: ${JSON.stringify(
+            Object.entries(headers)
+              .filter(
+                ([key]) =>
+                  key.toLowerCase().includes('tenant') ||
+                  key.toLowerCase().includes('subdomain'),
+              )
+              .reduce(
+                (acc, [key, value]) => {
+                  acc[key] = value;
+                  return acc;
+                },
+                {} as Record<string, unknown>,
+              ),
+          )}`,
+        );
       }
     }
 
@@ -156,8 +207,12 @@ export class TenantResolverGuard implements CanActivate {
 
     // Handle localhost in development
     if (host === 'localhost' || host === '127.0.0.1') {
-      // In development, could use a header or query param
-      // For now, return null to require proper setup
+      // In development, require header for localhost
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.warn(
+          `Accessing via ${hostname} without subdomain. Please use subdomain.localhost or provide X-Tenant-Subdomain header.`,
+        );
+      }
       return null;
     }
 
