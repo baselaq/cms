@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "setup:tenant-tables": "node scripts/setup-all-tenant-tables.mjs",
+    "add:password-reset-fields": "node scripts/add-password-reset-fields.mjs",
     "create:test-user": "node scripts/create-test-user.mjs"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.4",

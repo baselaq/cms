@@ -10,13 +10,22 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import type { LoginDto, RefreshTokenDto, MeResponseDto } from './dto';
+import type {
+  LoginDto,
+  RegisterDto,
+  RefreshTokenDto,
+  MeResponseDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  LoginWithOnboardingTokenDto,
+} from './dto';
 import { AuthService, PermissionService } from './services';
 import type { ITenantContext } from '../tenant/tenant.context';
 import { TenantResolverGuard } from '../tenant/tenant-resolver.guard';
+import { ClubsService } from '../clubs/clubs.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { UserEntity } from '../database/tenant/entities';
+import { UserEntity, ClubSettingEntity } from '../database/tenant/entities';
 
 @Controller('auth')
 @UseGuards(TenantResolverGuard)
@@ -26,7 +35,29 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly permissionService: PermissionService,
+    private readonly clubsService: ClubsService,
   ) {}
+
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
+    const tenantContext: ITenantContext | undefined = req.tenantContext;
+    if (!tenantContext) {
+      throw new Error('Tenant context not found');
+    }
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    const response = await this.authService.register(
+      registerDto,
+      tenantContext,
+      ipAddress,
+      userAgent,
+    );
+
+    this.logger.log(`User registered: ${registerDto.email}`);
+    return response;
+  }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -82,6 +113,58 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+    @Req() req: Request,
+  ) {
+    const tenantContext: ITenantContext | undefined = req.tenantContext;
+    if (!tenantContext) {
+      throw new Error('Tenant context not found');
+    }
+    return this.authService.forgotPassword(forgotPasswordDto, tenantContext);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Req() req: Request,
+  ) {
+    const tenantContext: ITenantContext | undefined = req.tenantContext;
+    if (!tenantContext) {
+      throw new Error('Tenant context not found');
+    }
+    return this.authService.resetPassword(resetPasswordDto, tenantContext);
+  }
+
+  /**
+   * Auto-login admin user using onboarding token
+   * This endpoint doesn't require tenant context - it creates it from the onboarding token
+   */
+  @Post('login-with-onboarding-token')
+  @HttpCode(HttpStatus.OK)
+  async loginWithOnboardingToken(
+    @Body() dto: LoginWithOnboardingTokenDto,
+    @Req() req: Request,
+  ) {
+    const subdomain = req.headers['x-tenant-subdomain'] as string;
+    if (!subdomain) {
+      throw new Error('X-Tenant-Subdomain header is required');
+    }
+
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    return this.authService.loginWithOnboardingToken(
+      dto.onboardingToken,
+      subdomain,
+      ipAddress,
+      userAgent,
+    );
+  }
+
   /**
    * Get current authenticated user with roles and permissions
    */
@@ -129,6 +212,18 @@ export class AuthController {
       user.userId,
     );
 
+    // Get onboarding status from club settings
+    const settingsRepo = dataSource.getRepository(ClubSettingEntity);
+    const settingsArr = await settingsRepo.find({
+      order: { createdAt: 'ASC' },
+      take: 1,
+    });
+    const settings = settingsArr[0] ?? null;
+
+    // Explicitly check if settings exists and onboardingComplete is explicitly true
+    // Default to false if settings is null/undefined or onboardingComplete is false/undefined
+    const onboardingComplete = settings && settings.onboardingComplete === true;
+
     const response: MeResponseDto = {
       id: userEntity.id,
       email: userEntity.email,
@@ -137,6 +232,7 @@ export class AuthController {
       status: userEntity.status,
       roles,
       permissions,
+      onboardingComplete: onboardingComplete ?? false,
     };
     return response;
   }

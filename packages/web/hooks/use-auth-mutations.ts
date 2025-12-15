@@ -26,6 +26,7 @@ interface AuthResponse {
     email: string;
     firstName: string | null;
     lastName: string | null;
+    onboardingComplete?: boolean;
   };
   expiresIn?: number;
 }
@@ -57,12 +58,14 @@ export function useLogin() {
       // Invalidate queries first
       queryClient.invalidateQueries({ queryKey: ["auth"] });
 
-      // Redirect immediately - don't wait for checkAuth which might fail
-      // The next page will handle auth check naturally
-      router.push("/");
-
-      // Try to fetch user in background, but don't block redirect
-      // Use setTimeout to ensure redirect happens first
+      // Refresh the page to trigger SSR onboarding check
+      // The login page will handle the redirect server-side based on onboarding status
+      // Use a small delay to ensure cookies are set before server-side check
+      setTimeout(() => {
+        router.refresh();
+      }, 50);
+      
+      // Try to fetch user in background to get full user data
       setTimeout(async () => {
         try {
           await checkAuth();
@@ -101,7 +104,7 @@ export function useRegister() {
 
       // Redirect immediately - don't wait for checkAuth which might fail
       // The next page will handle auth check naturally
-      router.push("/");
+      router.push("/dashboard/overview");
 
       // Try to fetch user in background, but don't block redirect
       // Use setTimeout to ensure redirect happens first
@@ -113,6 +116,54 @@ export function useRegister() {
           console.warn("Background auth check failed:", error);
         }
       }, 100);
+    },
+  });
+}
+
+interface ForgotPasswordData {
+  email: string;
+}
+
+interface ResetPasswordData {
+  token: string;
+  password: string;
+}
+
+interface ForgotPasswordResponse {
+  message: string;
+}
+
+interface ResetPasswordResponse {
+  message: string;
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (data: ForgotPasswordData) => {
+      const response = await post<ForgotPasswordResponse>(
+        "/auth/forgot-password",
+        data
+      );
+      return response.data;
+    },
+  });
+}
+
+export function useResetPassword() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async (data: ResetPasswordData) => {
+      const response = await post<ResetPasswordResponse>(
+        "/auth/reset-password",
+        data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      // After password reset, user needs to login
+      // Login page will redirect to dashboard after successful login
+      router.push("/login?reset=success");
     },
   });
 }

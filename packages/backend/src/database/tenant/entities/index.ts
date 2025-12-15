@@ -4,3 +4,7 @@ export * from './role.entity';
 export * from './permission.entity';
 export * from './user-role.entity';
 export * from './role-permission.entity';
+export * from './club-setting.entity';
+export * from './club-plan.entity';
+export * from './team.entity';
+export * from './club-invite.entity';

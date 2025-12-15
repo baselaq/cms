@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
@@ -8,7 +8,9 @@ import { AuthJwtService } from './services/jwt.service';
 import { TokenBlacklistService } from './services/token-blacklist.service';
 import { PermissionService } from './services/permission.service';
 import { RoleSeedService } from './services/role-seed.service';
+import { EmailService } from './services/email.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ClubsModule } from '../clubs/clubs.module';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       global: true,
     }),
     ConfigModule,
+    forwardRef(() => ClubsModule),
   ],
   controllers: [AuthController],
   providers: [
@@ -25,6 +28,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     TokenBlacklistService,
     PermissionService,
     RoleSeedService,
+    EmailService,
     JwtStrategy,
   ],
   exports: [
@@ -33,6 +37,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     TokenBlacklistService,
     PermissionService,
     RoleSeedService,
+    EmailService,
   ],
 })
 export class AuthModule {}

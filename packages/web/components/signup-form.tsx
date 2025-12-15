@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
+import { useState } from "react";
 import { AxiosError } from "axios";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,12 +26,17 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ErrorBanner } from "@/components/ui/error-banner";
-import { useRegister } from "@/hooks/use-auth-mutations";
+import { useRouter } from "next/navigation";
+import {
+  mergeOnboardingState,
+  OnboardingState,
+  clearOnboardingState,
+} from "@/lib/onboarding-storage";
 
 const signupSchema = z
   .object({
     email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
@@ -46,7 +52,9 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const registerMutation = useRegister();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -60,22 +68,31 @@ export function SignupForm({
   });
 
   const onSubmit = (data: SignupFormData) => {
-    registerMutation.mutate(
-      {
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      },
-      {
-        onError: (error: unknown) => {
-          const axiosError = error as AxiosError<{ message?: string }>;
-          const errorMessage =
-            axiosError?.response?.data?.message || "Registration failed";
-          form.setError("root", { message: errorMessage });
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      clearOnboardingState();
+      const nextState: OnboardingState = {
+        currentStep: 1,
+        adminInfo: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password,
         },
-      }
-    );
+      };
+      mergeOnboardingState(nextState);
+      router.push("/onboarding");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const errorMessage =
+        axiosError?.response?.data?.message ||
+        form.formState.errors.root?.message ||
+        "Unable to start onboarding. Please try again.";
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,8 +118,8 @@ export function SignupForm({
                         <FormControl>
                           <Input
                             type="text"
-                            placeholder="John"
-                            disabled={registerMutation.isPending}
+                          placeholder="John"
+                          disabled={isSubmitting}
                             {...field}
                           />
                         </FormControl>
@@ -119,8 +136,8 @@ export function SignupForm({
                         <FormControl>
                           <Input
                             type="text"
-                            placeholder="Doe"
-                            disabled={registerMutation.isPending}
+                          placeholder="Doe"
+                          disabled={isSubmitting}
                             {...field}
                           />
                         </FormControl>
@@ -139,7 +156,7 @@ export function SignupForm({
                         <Input
                           type="email"
                           placeholder="m@example.com"
-                          disabled={registerMutation.isPending}
+                          disabled={isSubmitting}
                           {...field}
                         />
                       </FormControl>
@@ -161,7 +178,7 @@ export function SignupForm({
                         <FormControl>
                           <Input
                             type="password"
-                            disabled={registerMutation.isPending}
+                            disabled={isSubmitting}
                             {...field}
                           />
                         </FormControl>
@@ -178,7 +195,7 @@ export function SignupForm({
                         <FormControl>
                           <Input
                             type="password"
-                            disabled={registerMutation.isPending}
+                          disabled={isSubmitting}
                             {...field}
                           />
                         </FormControl>
@@ -188,43 +205,31 @@ export function SignupForm({
                   />
                 </Field>
                 <FieldDescription>
-                  Must be at least 6 characters long.
+                  Must be at least 8 characters long.
                 </FieldDescription>
                 <Field>
                   <Button
                     type="submit"
-                    disabled={registerMutation.isPending}
+                    disabled={isSubmitting}
                     className="w-full"
                   >
-                    {registerMutation.isPending ? (
+                    {isSubmitting ? (
                       <span className="flex items-center gap-2">
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Creating account...
+                        Preparing onboarding...
                       </span>
                     ) : (
                       "Create Account"
                     )}
                   </Button>
                 </Field>
-                {registerMutation.error && (
+                {(submitError || form.formState.errors.root) && (
                   <Field>
                     <ErrorBanner
                       message={
-                        (
-                          registerMutation.error as AxiosError<{
-                            message?: string;
-                          }>
-                        )?.response?.data?.message || "Registration failed"
-                      }
-                    />
-                  </Field>
-                )}
-                {form.formState.errors.root && (
-                  <Field>
-                    <ErrorBanner
-                      message={
-                        form.formState.errors.root.message ||
-                        "An error occurred"
+                        submitError ||
+                        form.formState.errors.root?.message ||
+                        "Registration failed"
                       }
                     />
                   </Field>

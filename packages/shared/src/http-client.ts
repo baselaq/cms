@@ -15,6 +15,11 @@ export interface IHttpClientConfig {
   tokenStorage?: ITokenStorage;
   refreshTokenEndpoint?: string;
   onError?: (error: AxiosError) => void;
+  /**
+   * Optional callback for onboarding redirect
+   * Called when X-Onboarding-Complete header is false
+   */
+  onOnboardingIncomplete?: () => void;
 }
 
 export type TRefreshTokenHandler = () => Promise<string | null>;
@@ -25,6 +30,7 @@ export class HttpClient {
   private tokenStorage?: ITokenStorage;
   private refreshTokenEndpoint?: string;
   private onError?: (error: AxiosError) => void;
+  private onOnboardingIncomplete?: () => void;
   private isRefreshing = false;
   private failedQueue: Array<{
     resolve: (value?: any) => void;
@@ -44,6 +50,7 @@ export class HttpClient {
     this.tokenStorage = config.tokenStorage;
     this.refreshTokenEndpoint = config.refreshTokenEndpoint;
     this.onError = config.onError;
+    this.onOnboardingIncomplete = config.onOnboardingIncomplete;
 
     this.setupInterceptors();
     this.loadInitialToken();
@@ -152,9 +159,41 @@ export class HttpClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor for token refresh and error handling
+    // Response interceptor for token refresh, error handling, and onboarding check
     this.instance.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response: AxiosResponse) => {
+        // Check onboarding status from response header
+        const onboardingCompleteHeader =
+          response.headers["x-onboarding-complete"];
+        const onboardingComplete = onboardingCompleteHeader === "true";
+
+        // If onboarding is incomplete and callback is provided, trigger redirect
+        // Skip for onboarding-related endpoints to avoid infinite redirects
+        if (
+          !onboardingComplete &&
+          this.onOnboardingIncomplete &&
+          !response.config.url?.includes("/onboarding") &&
+          !response.config.url?.includes("/register") &&
+          !response.config.url?.includes("/login") &&
+          !response.config.url?.includes("/auth/login-with-onboarding-token")
+        ) {
+          // Only redirect if we have a token (user is authenticated)
+          if (this.tokenStorage) {
+            this.tokenStorage
+              .getAccessToken()
+              .then((token) => {
+                if (token) {
+                  this.onOnboardingIncomplete?.();
+                }
+              })
+              .catch(() => {
+                // Ignore errors checking token
+              });
+          }
+        }
+
+        return response;
+      },
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & {
           _retry?: boolean;

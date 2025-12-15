@@ -6,4 +6,5 @@ export class MeResponseDto {
   status: 'active' | 'inactive' | 'suspended';
   roles: string[];
   permissions: string[];
+  onboardingComplete?: boolean;
 }

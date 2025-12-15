@@ -52,10 +52,27 @@ export function LoginForm({
       { email: data.email, password: data.password },
       {
         onError: (error: unknown) => {
-          // Error is handled by global error handler, but we can set local error too
-          const axiosError = error as AxiosError<{ message?: string }>;
-          const errorMessage =
-            axiosError?.response?.data?.message || "Invalid credentials";
+          // Set form error to display beneath form fields
+          // Global error handler is skipped for auth endpoints
+          const axiosError = error as AxiosError<{
+            message?: string | string[];
+            statusCode?: number;
+          }>;
+
+          let errorMessage = "Invalid credentials";
+
+          if (axiosError?.response?.data) {
+            const data = axiosError.response.data;
+            // Handle both string and array messages (NestJS can return either)
+            if (data.message) {
+              if (Array.isArray(data.message)) {
+                errorMessage = data.message[0] || errorMessage;
+              } else {
+                errorMessage = data.message;
+              }
+            }
+          }
+
           form.setError("root", { message: errorMessage });
         },
       }
@@ -75,19 +92,6 @@ export function LoginForm({
                     Sign in to your account to continue
                   </p>
                 </div>
-                {loginMutation.error && (
-                  <Field>
-                    <ErrorBanner
-                      message={
-                        (
-                          loginMutation.error as AxiosError<{
-                            message?: string;
-                          }>
-                        )?.response?.data?.message || "Invalid credentials"
-                      }
-                    />
-                  </Field>
-                )}
                 {form.formState.errors.root && (
                   <Field>
                     <ErrorBanner
@@ -121,7 +125,7 @@ export function LoginForm({
                       <div className="flex items-center">
                         <FormLabel>Password</FormLabel>
                         <Link
-                          href="#"
+                          href="/forgot-password"
                           className="ml-auto text-sm underline-offset-2 hover:underline"
                         >
                           Forgot your password?

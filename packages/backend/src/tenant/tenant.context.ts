@@ -20,6 +20,9 @@ export interface ITenantMetadata {
   dbPasswordEncrypted: string;
   connectionPoolSize?: number;
   status: 'active' | 'suspended' | 'inactive';
+  onboardingStatus: 'pending' | 'completed';
+  onboardingTokenExpiresAt?: Date | null;
+  onboardingCompletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/contexts/auth-context";
+import { getAppDomain } from "@/lib/app-config";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -39,9 +40,34 @@ export function AppLayout({
   const pathname = usePathname();
   const { isLoading } = useAuth();
 
-  // Auth routes don't need the app layout
-  const authRoutes = ["/login", "/signup", "/register"];
+  // Check if we're on main domain (landing page should not have app layout)
+  const isMainDomain = React.useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const hostname = window.location.hostname;
+    const appDomain = getAppDomain();
+    const hostnameWithoutPort = hostname.split(":")[0];
+
+    return (
+      hostnameWithoutPort === appDomain ||
+      hostnameWithoutPort === "localhost" ||
+      hostnameWithoutPort === "127.0.0.1"
+    );
+  }, []);
+
+  // Auth routes and landing page don't need the app layout
+  const authRoutes = [
+    "/login",
+    "/signup",
+    "/register",
+    "/onboarding",
+    "/forgot-password",
+    "/reset-password",
+  ];
   const isAuthRoute = authRoutes.includes(pathname);
+  const isLandingPage = isMainDomain && pathname === "/";
+
+  // Skip app layout for auth routes and landing page
+  const shouldSkipAppLayout = isAuthRoute || isLandingPage;
 
   // Auto-generate breadcrumbs from pathname if not provided
   const autoBreadcrumbs = React.useMemo(() => {
@@ -71,8 +97,8 @@ export function AppLayout({
     );
   }
 
-  // Return plain layout for auth routes
-  if (isAuthRoute) {
+  // Return plain layout for auth routes and landing page
+  if (shouldSkipAppLayout) {
     return <>{children}</>;
   }
 

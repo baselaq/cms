@@ -6,6 +6,7 @@ export interface IAuthUser {
   status: "active" | "inactive" | "suspended";
   roles: string[];
   permissions: string[];
+  onboardingComplete?: boolean;
 }
 
 export interface IMeResponse {
@@ -16,4 +17,5 @@ export interface IMeResponse {
   status: "active" | "inactive" | "suspended";
   roles: string[];
   permissions: string[];
+  onboardingComplete?: boolean;
 }

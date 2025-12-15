@@ -13,6 +13,10 @@ import {
   PermissionEntity,
   UserRoleEntity,
   RolePermissionEntity,
+  ClubSettingEntity,
+  ClubPlanEntity,
+  TeamEntity,
+  ClubInviteEntity,
 } from '../database/tenant/entities';
 
 @Injectable()
@@ -73,6 +77,10 @@ export class ConnectionManagerService implements OnModuleInit, OnModuleDestroy {
           PermissionEntity,
           UserRoleEntity,
           RolePermissionEntity,
+          ClubSettingEntity,
+          ClubPlanEntity,
+          TeamEntity,
+          ClubInviteEntity,
         ],
       };
 

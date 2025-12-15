@@ -7,6 +7,7 @@ import { AxiosError } from "axios";
 import { httpClient } from "@/lib/http-client";
 import { getMe } from "@/lib/auth-client";
 import type { IAuthUser } from "@cms/shared";
+import { getAppDomain } from "@/lib/app-config";
 
 interface AuthContextType {
   user: IAuthUser | null;
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: userData.status as "active" | "inactive" | "suspended",
         roles: userData.roles,
         permissions: userData.permissions,
+        onboardingComplete: userData.onboardingComplete,
       });
     } catch (error) {
       // Handle Axios errors
@@ -154,22 +156,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [checkAuth]);
 
-  // Protected routes that require authentication
-  const protectedRoutes = ["/"];
-  const authRoutes = ["/login", "/signup", "/register"];
-
+  // Note: Route protection is now handled server-side via middleware.ts
+  // This client-side check is kept as a fallback for client-side navigation
   React.useEffect(() => {
     if (isLoading) return;
+    if (typeof window === "undefined") return; // SSR guard
+
+    // Check if we're on main domain or subdomain
+    const hostname = window.location.hostname;
+    const appDomain = getAppDomain();
+    const hostnameWithoutPort = hostname.split(":")[0];
+
+    // Determine if we're on main domain (no subdomain)
+    let isMainDomain = false;
+
+    if (hostnameWithoutPort === appDomain) {
+      // Exact match with app domain (e.g., cms.test)
+      isMainDomain = true;
+    } else if (
+      hostnameWithoutPort === "localhost" ||
+      hostnameWithoutPort === "127.0.0.1"
+    ) {
+      // Main localhost (no subdomain)
+      isMainDomain = true;
+    } else if (hostnameWithoutPort.endsWith(`.${appDomain}`)) {
+      // Subdomain of app domain (e.g., example.cms.test)
+      isMainDomain = false;
+    } else if (hostnameWithoutPort.includes("localhost")) {
+      // Check if it's a localhost subdomain (e.g., club1.localhost)
+      const parts = hostnameWithoutPort.split(".");
+      // Main domain if it's just "localhost" (length 1) or "localhost" with no prefix
+      isMainDomain =
+        parts.length === 1 || (parts.length === 2 && parts[0] === "localhost");
+    } else {
+      // For other domains, check if it's a subdomain
+      const parts = hostnameWithoutPort.split(".");
+      // If it has 3+ parts and first part is not "www", it's likely a subdomain
+      isMainDomain =
+        parts.length <= 2 || (parts.length === 3 && parts[0] === "www");
+    }
+
+    // Protected routes - on main domain, "/" is public (landing page)
+    // On subdomains, "/" requires authentication
+    const protectedRoutes = isMainDomain
+      ? ["/dashboard", "/content"] // Main domain: only protect dashboard/content
+      : ["/", "/dashboard", "/content"]; // Subdomain: protect everything including "/"
+    const authRoutes = ["/login", "/signup", "/register"];
 
     const isProtectedRoute = protectedRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + "/")
     );
     const isAuthRoute = authRoutes.includes(pathname);
 
+    // Only handle client-side navigation (middleware handles initial requests)
+    // Skip redirect if we're on main domain and accessing "/" (landing page)
     if (isProtectedRoute && !user) {
       router.push("/login");
     } else if (isAuthRoute && user) {
-      router.push("/");
+      router.push("/dashboard/overview");
     }
   }, [user, isLoading, pathname, router]);
 

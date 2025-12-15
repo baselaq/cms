@@ -18,6 +18,11 @@ export interface IHttpClientInitOptions {
    * Used for web platform to pass tenant subdomain to backend
    */
   getSubdomain?: () => string | null;
+  /**
+   * Optional callback for onboarding redirect
+   * Called when X-Onboarding-Complete header is false
+   */
+  onOnboardingIncomplete?: () => void;
 }
 
 /**
@@ -44,6 +49,7 @@ export function initializeHttpClient(options: IHttpClientInitOptions) {
     refreshTokenEndpoint = "/auth/refresh",
     onError,
     getSubdomain,
+    onOnboardingIncomplete,
   } = options;
 
   const config: IHttpClientConfig = {
@@ -52,6 +58,7 @@ export function initializeHttpClient(options: IHttpClientInitOptions) {
     tokenStorage,
     refreshTokenEndpoint,
     onError,
+    onOnboardingIncomplete,
   };
 
   const httpClient = new HttpClient(config);
@@ -59,55 +66,51 @@ export function initializeHttpClient(options: IHttpClientInitOptions) {
 
   // Add subdomain header interceptor if getSubdomain is provided (web platform)
   // This MUST be added before other interceptors to ensure header is set early
+  // All requests go to main domain (cms.test:3000), and tenant is identified via X-Tenant-Subdomain header
   if (getSubdomain) {
     // Use request interceptor with high priority (runs first)
     axiosInstance.interceptors.request.use(
       (config) => {
         const subdomain = getSubdomain();
-        if (subdomain && config.headers) {
-          // Ensure headers object exists
-          if (!config.headers) {
-            config.headers = {} as AxiosRequestHeaders;
-          }
+
+        // Ensure headers object exists
+        if (!config.headers) {
+          config.headers = {} as AxiosRequestHeaders;
+        }
+
+        // Always set X-Tenant-Subdomain header if subdomain exists
+        // Backend uses this header to route to the correct tenant database
+        // All requests go to main domain (cms.test:3000), not subdomain URLs
+        if (subdomain) {
           config.headers["X-Tenant-Subdomain"] = subdomain;
+
           if (process.env.NODE_ENV === "development") {
+            const currentHostname =
+              typeof window !== "undefined" ? window.location.hostname : "SSR";
             console.log(
               `🔗 [http-client] Adding X-Tenant-Subdomain header: ${subdomain}`
             );
             console.log(
-              `🔗 [http-client] Current hostname: ${
-                typeof window !== "undefined" ? window.location.hostname : "SSR"
-              }`
+              `🔗 [http-client] Current hostname: ${currentHostname}`
+            );
+            console.log(
+              `🔗 [http-client] Base URL (main domain): ${config.baseURL}`
             );
             console.log(
               `🔗 [http-client] Request URL: ${config.baseURL}${config.url}`
             );
-            console.log(
-              `🔗 [http-client] Full request config:`,
-              JSON.stringify(
-                {
-                  baseURL: config.baseURL,
-                  url: config.url,
-                  method: config.method,
-                  headers: {
-                    "X-Tenant-Subdomain": config.headers["X-Tenant-Subdomain"],
-                    "Content-Type": config.headers["Content-Type"],
-                  },
-                },
-                null,
-                2
-              )
-            );
           }
         } else {
+          // No subdomain - this is expected on main domain (cms.test)
+          // Guest-level endpoints (like /api/clubs/by-slug) don't need tenant header
           if (process.env.NODE_ENV === "development") {
-            console.error(
-              `❌ [http-client] No subdomain extracted from hostname: ${
-                typeof window !== "undefined" ? window.location.hostname : "SSR"
-              }`
+            const currentHostname =
+              typeof window !== "undefined" ? window.location.hostname : "SSR";
+            console.log(
+              `ℹ️ [http-client] No subdomain (main domain): ${currentHostname} - request to main domain without tenant header`
             );
-            console.error(
-              `❌ [http-client] Request will fail without subdomain header!`
+            console.log(
+              `ℹ️ [http-client] Request URL: ${config.baseURL}${config.url}`
             );
           }
         }

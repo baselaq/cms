@@ -36,7 +36,7 @@ type NavItemWithPermissions = NavItem & {
 const allNavItems: NavItemWithPermissions[] = [
   {
     title: "Start",
-    url: "/",
+    url: "/dashboard/overview",
     icon: DashboardSquare01Icon,
     isActive: true,
   },

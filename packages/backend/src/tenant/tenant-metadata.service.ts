@@ -106,6 +106,9 @@ export class TenantMetadataService {
       dbPasswordEncrypted: entity.dbPasswordEncrypted,
       connectionPoolSize: entity.connectionPoolSize,
       status: entity.status,
+      onboardingStatus: entity.onboardingStatus,
+      onboardingTokenExpiresAt: entity.onboardingTokenExpiresAt,
+      onboardingCompletedAt: entity.onboardingCompletedAt,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

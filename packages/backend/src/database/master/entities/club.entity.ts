@@ -52,6 +52,36 @@ export class ClubEntity implements ITenantMetadata {
   })
   status: 'active' | 'suspended' | 'inactive';
 
+  @Column({
+    type: 'varchar',
+    length: 128,
+    name: 'onboarding_token_hash',
+    nullable: true,
+  })
+  onboardingTokenHash?: string | null;
+
+  @Column({
+    type: 'timestamp',
+    name: 'onboarding_token_expires_at',
+    nullable: true,
+  })
+  onboardingTokenExpiresAt?: Date | null;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'onboarding_status',
+    default: 'pending',
+  })
+  onboardingStatus: 'pending' | 'completed';
+
+  @Column({
+    type: 'timestamp',
+    name: 'onboarding_completed_at',
+    nullable: true,
+  })
+  onboardingCompletedAt?: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

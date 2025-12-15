@@ -61,8 +61,12 @@ export function useError() {
 // Helper function to extract error message from AxiosError
 export function getErrorMessage(error: AxiosError): string {
   if (error.response?.data) {
-    const data = error.response.data as { message?: string };
+    const data = error.response.data as { message?: string | string[] };
     if (data.message) {
+      // Handle both string and array messages (NestJS can return either)
+      if (Array.isArray(data.message)) {
+        return data.message[0] || "An error occurred. Please try again.";
+      }
       return data.message;
     }
   }
