@@ -8,7 +8,11 @@ import { ProvisioningMetricsService } from './services/provisioning-metrics.serv
 import { AuthModule } from '@/auth/auth.module';
 
 @Module({
-  imports: [ConfigModule, TypeOrmModule.forFeature([ClubEntity]), forwardRef(() => AuthModule)],
+  imports: [
+    ConfigModule,
+    TypeOrmModule.forFeature([ClubEntity]),
+    forwardRef(() => AuthModule),
+  ],
   controllers: [ClubsController],
   providers: [ClubsService, ProvisioningMetricsService],
   exports: [ClubsService],

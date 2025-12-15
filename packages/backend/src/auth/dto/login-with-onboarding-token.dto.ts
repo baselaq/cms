@@ -4,4 +4,3 @@ export class LoginWithOnboardingTokenDto {
   @IsString()
   onboardingToken: string;
 }
-
