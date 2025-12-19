@@ -59,7 +59,11 @@ async function bootstrap() {
       'X-Onboarding-Token',
       'X-ONBOARDING-TOKEN', // All case variations for compatibility
     ],
-    exposedHeaders: ['Authorization', 'x-onboarding-token'],
+    exposedHeaders: [
+      'Authorization',
+      'x-onboarding-token',
+      'X-Onboarding-Complete',
+    ],
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

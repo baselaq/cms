@@ -213,6 +213,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isProtectedRoute && !user) {
       router.push("/login");
     } else if (isAuthRoute && user) {
+      // Redirect authenticated users away from auth routes to dashboard
+      // Note: Onboarding enforcement is handled entirely by middleware.ts
       router.push("/dashboard/overview");
     }
   }, [user, isLoading, pathname, router]);

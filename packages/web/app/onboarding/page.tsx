@@ -1,7 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { getMeServer } from "@/lib/auth-api-server";
 
 /**
  * Extract subdomain from hostname (server-side)
@@ -52,21 +51,7 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  // Check onboarding status server-side
-  try {
-    const user = await getMeServer(accessToken, subdomain);
-
-    console.log("user", user);
-
-    // If onboarding is already complete, redirect to dashboard
-    if (user.onboardingComplete) {
-      redirect("/dashboard/overview");
-    }
-  } catch (error) {
-    // If we can't verify onboarding status, let the client component handle it
-    console.warn("Failed to check onboarding status server-side:", error);
-  }
-
   // The OnboardingWizard component will handle client-side state (sessionStorage)
+  // Note: Middleware handles the redirect if onboarding is already complete
   return <OnboardingWizard />;
 }

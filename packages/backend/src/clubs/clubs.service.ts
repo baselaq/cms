@@ -666,6 +666,19 @@ export class ClubsService {
     return this.clubRepository.findOne({ where: { subdomain } });
   }
 
+  /**
+   * Mark onboarding as complete in master database
+   * Called by AuthController after updating tenant settings
+   */
+  async markOnboardingComplete(clubId: string): Promise<void> {
+    await this.clubRepository.update(clubId, {
+      onboardingStatus: 'completed',
+      onboardingCompletedAt: new Date(),
+      onboardingTokenHash: null,
+      onboardingTokenExpiresAt: null,
+    });
+  }
+
   private ensureOnboardingAccess(
     club: ClubEntity,
     onboardingToken?: string,

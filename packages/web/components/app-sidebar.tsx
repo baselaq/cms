@@ -21,6 +21,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { TeamSwitcher } from "./team-switcher";
+import { OnboardingNotice } from "./onboarding-notice";
 import { useAuth } from "@/hooks/use-auth";
 
 // Menu item with permission requirements
@@ -257,6 +258,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={filteredNavItems as unknown as typeof allNavItems} />
       </SidebarContent>
       <SidebarFooter>
+        <OnboardingNotice />
         <NavUser user={displayUser} />
       </SidebarFooter>
     </Sidebar>

@@ -7,4 +7,6 @@ export class MeResponseDto {
   roles: string[];
   permissions: string[];
   onboardingComplete?: boolean;
+  onboardingToken?: string | null;
+  subdomain?: string;
 }

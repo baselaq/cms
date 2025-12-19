@@ -7,10 +7,12 @@ import {
   HttpStatus,
   Req,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
   Logger,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import type {
+import {
   LoginDto,
   RegisterDto,
   RefreshTokenDto,
@@ -40,6 +42,13 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
   async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
     const tenantContext: ITenantContext | undefined = req.tenantContext;
     if (!tenantContext) {
@@ -235,5 +244,41 @@ export class AuthController {
       onboardingComplete: onboardingComplete ?? false,
     };
     return response;
+  }
+
+  /**
+   * Complete onboarding for the current tenant (authenticated user)
+   * This endpoint allows admins to complete onboarding without the token
+   */
+  @Post('complete-onboarding')
+  @UseGuards(TenantResolverGuard, JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async completeOnboarding(@Req() req: Request) {
+    const tenantContext: ITenantContext | undefined = req.tenantContext;
+    if (!tenantContext) {
+      throw new Error('Tenant context not found');
+    }
+
+    const { dataSource, tenantId } = tenantContext;
+    const completedAt = new Date();
+
+    // Update tenant settings
+    const settingsRepo = dataSource.getRepository(ClubSettingEntity);
+    await settingsRepo
+      .createQueryBuilder()
+      .update()
+      .set({
+        onboardingComplete: true,
+        onboardingStep: 'completed',
+        onboardingCompletedAt: completedAt,
+      })
+      .execute();
+
+    // Update master database
+    await this.clubsService.markOnboardingComplete(tenantId);
+
+    this.logger.log(`Onboarding completed for tenant: ${tenantId}`);
+
+    return { completedAt, success: true };
   }
 }

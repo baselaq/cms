@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import {
   registerClub,
   updateClubPlan,
@@ -87,8 +86,6 @@ export function useSendInvites() {
 }
 
 export function useCompleteOnboarding() {
-  const router = useRouter();
-
   return useMutation({
     mutationFn: async ({
       clubId,
@@ -99,9 +96,7 @@ export function useCompleteOnboarding() {
     }) => {
       return await completeOnboarding(clubId, onboardingToken);
     },
-    onSuccess: () => {
-      clearOnboardingState();
-      router.push("/dashboard/overview?welcome=1");
-    },
+    // Note: onSuccess is handled by the component to show the welcome step first
+    // The component will clear state and redirect when the user clicks "Get Started"
   });
 }
