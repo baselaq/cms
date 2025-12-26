@@ -7,6 +7,7 @@ import { TenantModule } from './tenant/tenant.module';
 import { TestTenantController } from './test-tenant.controller';
 import { AuthModule } from './auth/auth.module';
 import { ClubsModule } from './clubs/clubs.module';
+import { SettingsModule } from './settings/settings.module';
 import { OnboardingStatusInterceptor } from './common/interceptors/onboarding-status.interceptor';
 
 @Module({
@@ -18,6 +19,7 @@ import { OnboardingStatusInterceptor } from './common/interceptors/onboarding-st
     TenantModule,
     AuthModule,
     ClubsModule,
+    SettingsModule,
   ],
   controllers: [AppController, TestTenantController],
   providers: [

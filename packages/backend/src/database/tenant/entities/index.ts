@@ -8,3 +8,4 @@ export * from './club-setting.entity';
 export * from './club-plan.entity';
 export * from './team.entity';
 export * from './club-invite.entity';
+export * from './branch.entity';

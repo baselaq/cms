@@ -17,6 +17,7 @@ import {
   ClubPlanEntity,
   TeamEntity,
   ClubInviteEntity,
+  BranchEntity,
 } from '../database/tenant/entities';
 
 @Injectable()
@@ -81,6 +82,7 @@ export class ConnectionManagerService implements OnModuleInit, OnModuleDestroy {
           ClubPlanEntity,
           TeamEntity,
           ClubInviteEntity,
+          BranchEntity,
         ],
       };
 

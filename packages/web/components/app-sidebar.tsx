@@ -152,19 +152,24 @@ const allNavItems: NavItemWithPermissions[] = [
   },
   {
     title: "Settings",
-    url: "/settings",
+    url: "/dashboard/settings",
     icon: Settings01Icon,
-    requiredPermission: "settings.read",
+    requiredRole: "Admin",
     items: [
       {
-        title: "Club Settings",
-        url: "/settings/club",
-        requiredPermission: "settings.read",
+        title: "Profile",
+        url: "/dashboard/settings#profile",
+        requiredRole: "Admin",
       },
       {
-        title: "Integrations",
-        url: "/settings/integrations",
-        requiredPermission: "settings.read",
+        title: "Branding",
+        url: "/dashboard/settings#branding",
+        requiredRole: "Admin",
+      },
+      {
+        title: "Branches",
+        url: "/dashboard/settings#branches",
+        requiredRole: "Admin",
       },
     ],
   },

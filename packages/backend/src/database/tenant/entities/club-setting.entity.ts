@@ -90,10 +90,33 @@ export class ClubSettingEntity {
   @Column({
     type: 'varchar',
     length: 255,
+    name: 'branding_cover_url',
+    nullable: true,
+  })
+  brandingCoverUrl: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
     name: 'support_email',
     nullable: true,
   })
   supportEmail: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    name: 'organization_name',
+    nullable: true,
+  })
+  organizationName: string | null;
+
+  @Column({
+    type: 'text',
+    name: 'organization_description',
+    nullable: true,
+  })
+  organizationDescription: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

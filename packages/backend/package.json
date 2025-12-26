@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "setup:tenant-tables": "node scripts/setup-all-tenant-tables.mjs",
     "add:password-reset-fields": "node scripts/add-password-reset-fields.mjs",
-    "create:test-user": "node scripts/create-test-user.mjs"
+    "create:test-user": "node scripts/create-test-user.mjs",
+    "migrate:tenants": "node scripts/run-tenant-migrations.mjs"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",

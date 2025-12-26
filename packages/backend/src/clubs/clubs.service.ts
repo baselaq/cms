@@ -19,6 +19,7 @@ import { ClubRegistrationResponseDto } from './dto/club-registration-response.dt
 import { CheckSlugResponseDto } from './dto/check-slug-response.dto';
 import { ClubEntity } from '@/database/master/entities/club.entity';
 import {
+  BranchEntity,
   ClubInviteEntity,
   ClubPlanEntity,
   ClubSettingEntity,
@@ -32,6 +33,8 @@ import {
 } from '@/database/tenant/entities';
 import { CreateTenantBaseTables1731600000000 } from '@/database/tenant/migrations/1731600000000-CreateTenantBaseTables';
 import { AddPasswordResetFields1731600100000 } from '@/database/tenant/migrations/1731600100000-AddPasswordResetFields';
+import { AddCoverImageAndOrganizationFields1731600200000 } from '@/database/tenant/migrations/1731600200000-AddCoverImageAndOrganizationFields';
+import { CreateBranchesTable1731600300000 } from '@/database/tenant/migrations/1731600300000-CreateBranchesTable';
 import { encrypt, decrypt } from '@/utils/encryption.util';
 import { RoleSeedService } from '@/auth/services/role-seed.service';
 import { EmailService } from '@/auth/services/email.service';
@@ -546,10 +549,13 @@ export class ClubsService {
         ClubSettingEntity,
         TeamEntity,
         ClubInviteEntity,
+        BranchEntity,
       ],
       migrations: [
         CreateTenantBaseTables1731600000000,
         AddPasswordResetFields1731600100000,
+        AddCoverImageAndOrganizationFields1731600200000,
+        CreateBranchesTable1731600300000,
       ],
       synchronize: false,
       logging: process.env.NODE_ENV === 'development',
